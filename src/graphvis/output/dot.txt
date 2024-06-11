@@ -1,0 +1,25 @@
+digraph G {
+splines=line;
+bb0 [shape=record, label="BB0 | 1: const 0\l2: const 10\l6: const 1\l"];
+bb1 [shape=record, label="BB1 | 0: read\l"];
+bb2 [shape=record, label="BB2 | 15: phi (7) (0)\l16: phi (7) (1)\l17: phi (7) (1)\l18: phi (7) (0)\l"];
+bb3 [shape=record, label="BB3 | 3: cmp (1) (2)\l4: blt (3) (5)\l"];
+bb4 [shape=record, label="BB4 | 5: &lt;empty&gt;\l7: add (0) (6)\l"];
+bb5 [shape=record, label="BB5 | 11: phi (7) (7)\l12: phi (7) (7)\l13: phi (7) (0)\l"];
+bb6 [shape=record, label="BB6 | 8: cmp (0) (2)\l9: blt (8) (10)\l"];
+bb7 [shape=record, label="BB7 | 10: &lt;empty&gt;\l14: bra (11)\l"];
+bb8 [shape=record, label="BB8 | 19: bra (15)\l"];
+bb9 [shape=record, label="BB9 | 20: write(11)\l"];
+bb6 -> bb8 [label="branch"];
+bb3 -> bb9 [label="fall-through"];
+bb8 -> bb2 [label="branch"];
+bb5 -> bb6;
+bb6 -> bb8 [label="fall-through"];
+bb6 -> bb7 [label="branch"];
+bb7 -> bb5 [label="branch"];
+bb4 -> bb5;
+bb3 -> bb4;
+bb2 -> bb3;
+bb1 -> bb2;
+bb0 -> bb1;
+}
