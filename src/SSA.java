@@ -94,7 +94,6 @@ public class SSA {
         WriteInstruction writeInstruction;
         if (src.getKind() == 1) {
             // its a variable
-            System.out.println(Tokenizer.Id2String(src.getValue()));
             writeInstruction = new WriteInstruction(sp, SSA.findVariableSkipElseThenBody(Tokenizer.Id2String(src.getValue())));
         } else {
             writeInstruction = new WriteInstruction(sp, src.getInstructionSp());
@@ -634,6 +633,7 @@ public class SSA {
 //        }
 
         StringBuilder dotGraph = new StringBuilder();
+        System.out.println("\n===============================> Dot Graph Code <=============================================\n");
         dotGraph.append("digraph G {\n");
         dotGraph.append("splines=line;\n");
 
@@ -732,6 +732,7 @@ public class SSA {
 
         dotGraph.append("}\n");
         System.out.println(dotGraph);
+        System.out.println("==================================> Code End <=============================================\n");
         Graph.createGraph(dotGraph.toString());
     }
 

@@ -283,7 +283,6 @@ public class Parser {
 
     public static void statSequence() throws Exception {
         while (!tkStr.equals(".") && !tkStr.equals("else") && !tkStr.equals("fi") && !tkStr.equals("od")) {
-            System.out.println(tkStr);
             if (tkStr.equals(";")) {
                 SSA.printAll();
                 next();
@@ -367,15 +366,11 @@ public class Parser {
         //outputnum can have an expression in it that will be evaluated and referenced to as the write(instruction #).
         else if (tkStr.contains("OutputNum")) {
             // tkstr right now is OutputNum(.
-            System.out.println("curr tkStr: " + tkStr);
             next();
-            System.out.println("curr tkStr after next: " + tkStr);
             try {
                 Result x = expression();
-                System.out.println("HERE ASF");
                 SSA.addWrite(x);
                 next();
-                System.out.println("curr tkStr after next: " + tkStr);
             } catch (Exception e) {
                 System.out.println("error in outputnum call: " + e);
             }

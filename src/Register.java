@@ -39,7 +39,7 @@ public class Register {
             });
         }
 
-        System.out.println("Result: " + z + " (kind: " + z.getKind() + ", value: " + z.getValue() + ", instructionSp: " + z.getInstructionSp() + ")");
+//        System.out.println("Result: " + z + " (kind: " + z.getKind() + ", value: " + z.getValue() + ", instructionSp: " + z.getInstructionSp() + ")");
         return z;
     }
 }
