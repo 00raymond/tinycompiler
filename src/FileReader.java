@@ -6,6 +6,14 @@ public class FileReader {
     private static String fileContent;
     private static int currPos = 0;
 
+    public static int getCurrPos() {
+        return currPos;
+    }
+
+    public static void setCurrPos(int pos) {
+        currPos = pos;
+    }
+
     public FileReader(String fn) {
         file = new File("src/" + fn);
         try {

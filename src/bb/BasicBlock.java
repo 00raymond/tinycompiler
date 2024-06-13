@@ -82,6 +82,25 @@ public class BasicBlock {
         isWhileContinue = aWhileContinue;
     }
 
+    public void changeInstructionBySymbol(String varName, int newXInstructionNo) {
+
+        System.out.println("reahced here");
+
+        if (!varTable.containsKey(varName)) {
+
+            return;
+        }
+
+        int instructionNo = varTable.get(varName);
+
+        for (Instruction instruction : instructions) {
+            if (instruction.getInstructionNo() == instructionNo) {
+                instruction.setX(newXInstructionNo);
+                return;
+            }
+        }
+    }
+
     public String toString() {
         StringBuilder sb = new StringBuilder();
         sb.append("Basic Block:\n");

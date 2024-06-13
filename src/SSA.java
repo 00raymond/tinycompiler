@@ -21,6 +21,78 @@ public class SSA {
         basicBlocks.add(bb);
     }
 
+    public static void updatePhiInTargetBlock(String varName, int instructionNo, int targetBbp) {
+
+        if (basicBlocks.get(targetBbp).getVarTable().containsKey(varName)) {
+            // update the phi function with the new value.
+            basicBlocks.get(targetBbp).changeInstructionBySymbol(varName, instructionNo);
+            return;
+        } else {
+            // targetBbp must be set to the next while header block.
+            targetBbp = findNextWhileHeader(targetBbp - 1);
+            System.out.println(targetBbp);
+            System.out.println("asdfasdfasdf");
+            if (basicBlocks.get(targetBbp).getVarTable().containsKey(varName)) {
+                // update the phi function with the new value.
+                basicBlocks.get(targetBbp).changeInstructionBySymbol(varName, instructionNo);
+                return;
+            } else {
+                // add it to the instructions of the targetBbp
+                int find = findVariableSkipElseThenBody(varName);
+                Instruction newPhiInstruct = new Instruction(sp, "phi", instructionNo, find);
+                basicBlocks.get(targetBbp).addSymbol(varName, sp);
+                basicBlocks.get(targetBbp).addInstruction(newPhiInstruct);
+                sp++;
+
+            }
+        }
+        System.out.println("could not find bbp with variable: " + varName);
+    }
+
+    public static void generatePhiFromLookAhead(String varName, int whileHeaderBbp) {
+        // create phi function in the nearest up while loop header
+        // for the variable varName.
+
+        // if the variable has not been added to the while loop symbol table, add it.
+
+        int prevInstructionNo = findVariable(varName, whileHeaderBbp - 1);
+        // upon running the loop, we will find the true new value of the variable.
+        Instruction phiInstruct = new Instruction(sp, "phi", -1, prevInstructionNo);
+        basicBlocks.get(whileHeaderBbp).addSymbol(varName, sp);
+        int newInstructionNo = sp;
+        sp++;
+        basicBlocks.get(whileHeaderBbp).addInstruction(phiInstruct);
+
+        // if nestedLoop >= 2, that means we are in a nested while loop. we need to check the wrapping header(s) for the variable
+        // and update the value of this phi function.
+
+        if (Parser.getLoopDepth() > 1) {
+            // we are in a nested while loop. need to check each wrapping header's symbol table for the variable and if its there
+            // we need to update its phi function.
+
+            int startingBbp = --whileHeaderBbp;
+            System.out.println(startingBbp);
+            for (int i = 0; i < Parser.getLoopDepth() - 1; i++) {
+
+                while (!basicBlocks.get(startingBbp).isWhile()) {
+                    startingBbp--;
+                    System.out.println(startingBbp);
+                }
+                BasicBlock nextWhileHeader = basicBlocks.get(startingBbp);
+                if (nextWhileHeader.getVarTable().containsKey(varName)) {
+                    // update the phi function with the new value.
+                    nextWhileHeader.changeInstructionBySymbol(varName, newInstructionNo);
+                }
+
+                startingBbp++;
+
+            }
+
+        }
+
+
+    }
+
     public static void changeCurrBbWhile() {
         basicBlocks.get(bbp).setWhile(true);
     }
@@ -37,34 +109,24 @@ public class SSA {
         return bbp;
     }
 
-    public static void addPhiWhile(int whileHeaderBbp, int whileHeaderRelBbp) {
-
-        HashMap<String, Integer> tempMap = new HashMap<>();
-
-        // each time, check if the variable is NOT in the tempMap. if it is not, then add it and create a phi function for what it previously was.
-        // in order to get the previous value of the variable, we must scan all the basic blocks backwards until we find the variable. if we dont, lets just make the instruction -1.
-        // if we do find the variable, we create a phi function with the previous value and the current value.
-
-        for (int i = bbp; i > whileHeaderRelBbp; i--) { // scan all while body blocks.
-            BasicBlock basicBlock = basicBlocks.get(i);
-            for (String symbol : basicBlock.getVarTable().keySet()) {
-                if (!tempMap.containsKey(symbol)) {
-                    tempMap.put(symbol, basicBlock.getVarTable().get(symbol));
-                    int prevInstructionNo = findVariable(symbol, whileHeaderBbp - 1);
-
-                    Instruction phiInstruct = new Instruction(sp, "phi", tempMap.get(symbol), prevInstructionNo);
-                    basicBlocks.get(whileHeaderBbp).addSymbol(symbol, sp);
-                    sp++;
-                    basicBlocks.get(whileHeaderBbp).addInstruction(phiInstruct);
-
-                }
-            }
-        }
-    }
-
     public static int findVariable(String symbol, int bbpStart) {
         // iterate backwards through basic blocks starting at bbpStart and ending at top of the basic blocks.
         // skip else, then, while header or while rel blocks.
+
+        if (Parser.getLoopDepth() > 1 ) {
+            for (int i = bbpStart; i > 0; i--) {
+                BasicBlock basicBlock = basicBlocks.get(i);
+                if (basicBlock.isElse() || basicBlock.isThen() || basicBlock.isWhileRel()) {
+                    continue;
+                }
+                for (String sym : basicBlock.getVarTable().keySet()) {
+                    if (sym.equals(symbol)) {
+                        return basicBlock.getVarTable().get(sym);
+                    }
+                }
+            }
+            return -1;
+        }
 
         for (int i = bbpStart; i > 0; i--) {
             BasicBlock basicBlock = basicBlocks.get(i);
@@ -499,6 +561,17 @@ public class SSA {
         return -1;
     }
 
+    public static int findNextWhileHeaderBbp(int bbpStart) {
+        int start = bbpStart;
+        while (start != 0) {
+            if (basicBlocks.get(start).isWhile()) {
+                return start;
+            }
+            start--;
+        }
+        return -1;
+    }
+
     public static void printAll() {
 //        for (int i = 0; i < basicBlocks.size(); i++) {
 //            BasicBlock basicBlock = basicBlocks.get(i);
@@ -726,8 +799,6 @@ public class SSA {
                 dotGraph.append("bb").append(i - 1).append(" -> bb").append(i).append(";\n");
             }
         }
-
-
 
 
         dotGraph.append("}\n");

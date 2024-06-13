@@ -15,10 +15,16 @@ public class Instruction {
         this.op = op;
         this.x = x;
         this.y = y;
-        instruction = instructionNo + ": " + op + " (" + x + ") (" + y + ")";
+//        instruction = instructionNo + ": " + op + " (" + x + ") (" + y + ")";
     }
 
+    public void setX(int x) {
+        this.x = x;
+    }
 
+    public void setY(int y) {
+        this.y = y;
+    }
 
     public int getInstructionNo() {
         return instructionNo;
@@ -47,7 +53,7 @@ public class Instruction {
 
     @Override
     public String toString() {
-        return instruction;
+        return instructionNo + ": " + op + " (" + x + ") (" + y + ")";
     }
 
 }

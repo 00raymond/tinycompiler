@@ -10,6 +10,40 @@ public class Tokenizer {
     private static int number;
     private static int identifier;
     private static boolean EOF = false;
+    private static int saveState; // use for when looking ahead
+    private static char saveCh;
+    private static boolean savedEOF;
+
+    public static String lookAhead(int x) {
+        // looks ahead x number of statement.
+
+        // save current state
+        saveCh = ch;
+        savedEOF = EOF;
+        saveState = FileReader.getCurrPos();
+
+        String output = "";
+
+        // x times: we will get the next strings divided by ';' and return the xth string
+        for (int i = 0; i < x; i++) {
+            while (ch != ';') {
+                next();
+            }
+            next();
+        }
+
+        // get the xth string
+        while (ch != ';') {
+            output += ch;
+            next();
+        }
+
+        FileReader.setCurrPos(saveState);
+        ch = saveCh;
+        EOF = savedEOF;
+
+        return output;
+    }
 
     public static void next() {
         ch = FileReader.getNext();

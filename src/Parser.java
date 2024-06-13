@@ -6,9 +6,23 @@ import result.Result;
 
 public class Parser {
     private static int currTk;
+    private static boolean isInWhileBody = false;
     private static HashMap<String, Integer> varTable = new HashMap<>();
     private static String tkStr;
     private static ArrayList<Object> tempTerms = new ArrayList<>();
+    private static int nestedLoop = 0;
+
+    public static int getLoopDepth() {
+        return nestedLoop;
+    }
+
+    private static void setIsInWhileBody(boolean value) {
+        isInWhileBody = value;
+    }
+
+    private static boolean getIsInWhileBody() {
+        return isInWhileBody;
+    }
 
     public static void next() {
         currTk = Tokenizer.getNext();
@@ -72,7 +86,10 @@ public class Parser {
         return new Result(5, isTrue ? 1 : 0);
     }
 
+
+
     public static void whileLoop() throws Exception {
+
         next();
         // consume "while"
         // example while x<10 do <statsequence> od
@@ -83,6 +100,73 @@ public class Parser {
         SSA.createBasicBlock(); // create a separate basic block for the cmp/branch instructions.
         SSA.changeCurrBbWhileRel();
         int whileRelPosition = SSA.getBbp();
+
+        // must create phi functions somewhere here or before, since we need to know which variables have been changed in the while loop body.
+        // we will use the new lookahead method to determine which variables have been changed in the while loop body.
+        int i = 0;
+        String temp = tkStr;
+        String currentLookAhead = Tokenizer.lookAhead(i);
+        ArrayList<String> addedTemp = new ArrayList<>();
+        String oldLine = currentLookAhead;
+        int nest = 0;
+        while (!currentLookAhead.contains("od")) {
+            if (currentLookAhead.contains("do")) {
+                // skip to after the do line
+                oldLine = currentLookAhead;
+                currentLookAhead = currentLookAhead.substring(currentLookAhead.indexOf("do") + 2);
+                nest++;
+            }
+
+            if (oldLine.contains("while") && nest > 1) {
+                System.out.println("i is currently: " + i + " and the lookahead is: " + currentLookAhead);
+
+                while (!currentLookAhead.contains("od")) {
+
+                    if (currentLookAhead.contains("let")) {
+
+                        String[] split = currentLookAhead.trim().split("\\s+");
+                        String varName = split[1];
+                        System.out.println("asdf:" + varName);
+
+                        if (addedTemp.contains(varName)) {
+                            i++;
+                            oldLine = currentLookAhead;
+                            currentLookAhead = Tokenizer.lookAhead(i);
+                            continue;
+                        }
+                        oldLine = currentLookAhead;
+                        addedTemp.add(varName);
+                        SSA.generatePhiFromLookAhead(varName, whileHeaderPosition);
+
+                    }
+
+                    i++;
+                    oldLine = currentLookAhead;
+                    currentLookAhead = Tokenizer.lookAhead(i);
+                }
+            }
+
+            // if its a let statement, we need to create the phi function
+            if (currentLookAhead.contains("let")) {
+                String[] split = currentLookAhead.trim().split("\\s+");
+                String varName = split[1];
+
+                if (addedTemp.contains(varName)) {
+                    i++;
+                    currentLookAhead = Tokenizer.lookAhead(i);
+                    continue;
+                }
+                addedTemp.add(varName);
+                System.out.println(varName);
+
+                SSA.generatePhiFromLookAhead(varName, whileHeaderPosition);
+
+            }
+            System.out.println(Tokenizer.lookAhead(i));
+            i++;
+            currentLookAhead = Tokenizer.lookAhead(i);
+        }
+        i = 0;
 
         // indicate that this is the header somehow in basic block code
 
@@ -96,6 +180,7 @@ public class Parser {
         next(); // consume "do"
         // now at the start of the statsequence
         SSA.createBasicBlock(); // create basic block for the body
+
         statSequence();
 
         if (tkStr.equals("od")) {
@@ -104,7 +189,7 @@ public class Parser {
 
             // NO NEED FOR EMPTY INSTRUCTION! JUST POINT TO FIRST INSTRUCTION IN THE BASIC BLOCK.
             // HERE: add phi functions for variables that have been changed in the while loop body
-            SSA.addPhiWhile(whileHeaderPosition, whileRelPosition);
+//            SSA.addPhiWhile(whileHeaderPosition, whileRelPosition);
             SSA.addBra(whileHeaderPosition); // add branch instruction to the while loop header
 
             // create else block
@@ -232,6 +317,7 @@ public class Parser {
         next(); // "consume tkstr"
         next(); // consume "<-"
         Result src;
+        int nearestWhileHeaderBbp;
 
         // tkStr could be a function call.
         if (tkStr.equals("call")) {
@@ -241,6 +327,10 @@ public class Parser {
             src.setInstructionSp(instructionNo);
             SSA.addAssignmentToSymbolTable(varName, src); // maps a symbol to an instruction in the current bb
             varTable.put(varName, src.getValue());
+            if (nestedLoop > 0) {
+                nearestWhileHeaderBbp = SSA.skipWhileBody(SSA.getBbp());
+                SSA.updatePhiInTargetBlock(varName, src.getInstructionSp(), nearestWhileHeaderBbp);
+            }
             next();
         } else {
             // tkStr could be an expression.
@@ -252,14 +342,31 @@ public class Parser {
                 x.setInstructionSp(SSA.addConst(term));
                 SSA.addAssignmentToSymbolTable(varName, x);
                 varTable.put(varName, term);
+                if (nestedLoop > 0) {
+                    nearestWhileHeaderBbp = SSA.skipWhileBody(SSA.getBbp());
+                    SSA.updatePhiInTargetBlock(varName, x.getInstructionSp(), nearestWhileHeaderBbp);
+                }
             } else if (tempTerms.size() == 1 && (tempTerms.get(0) instanceof Character || tempTerms.get(0) instanceof String)) {
                 String variable = (String) tempTerms.get(0);
                 Result x = new Result();
                 x.setInstructionSp(SSA.findVariableSkipElseThenBody(variable));
                 SSA.addAssignmentToSymbolTable(varName, x);
+                if (nestedLoop > 0) {
+                    nearestWhileHeaderBbp = SSA.skipWhileBody(SSA.getBbp());
+                    SSA.updatePhiInTargetBlock(varName, x.getInstructionSp(), nearestWhileHeaderBbp);
+                }
             } else {
                 SSA.addAssignmentToSymbolTable(varName, src); // maps a symbol to an instruction in the current bb
+
                 varTable.put(varName, src.getValue());
+
+                if (nestedLoop > 0) {
+                    nearestWhileHeaderBbp = SSA.findNextWhileHeader(SSA.getBbp());
+                    System.out.println("varName: " + varName + " src: " + src.getValue() + " nearestWhileHeaderBbp: " + nearestWhileHeaderBbp);
+                    SSA.updatePhiInTargetBlock(varName, src.getValue(), nearestWhileHeaderBbp);
+
+                }
+                System.out.println("reached end");
             }
         }
 
@@ -310,7 +417,9 @@ public class Parser {
                 }
 
                 case "while" -> {
+                    nestedLoop++;
                     whileLoop();
+                    nestedLoop--;
                 }
 
                 case "}" -> {
