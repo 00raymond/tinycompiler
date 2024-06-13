@@ -1,15 +1,15 @@
 digraph G {
 splines=line;
-bb0 [shape=record, label="BB0 | 1: const 0\l6: const 10\l10: const 1\l"];
+bb0 [shape=record, label="BB0 | 1: const 0\l2: const 10\l6: const 1\l"];
 bb1 [shape=record, label="BB1 | 0: read\l"];
-bb2 [shape=record, label="BB2 | 2: phi (13) (1)\l3: phi (14) (1)\l4: phi (15) (0)\l5: phi (11) (0)\l"];
-bb3 [shape=record, label="BB3 | 7: cmp (2) (6)\l8: blt (7) (9)\l"];
-bb4 [shape=record, label="BB4 | 9: &lt;empty&gt;\l11: add (5) (10)\l12: add (4) (10)\l"];
-bb5 [shape=record, label="BB5 | 13: phi (19) (11)\l14: phi (11) (12)\l15: phi (19) (4)\l"];
-bb6 [shape=record, label="BB6 | 16: cmp (15) (6)\l17: blt (16) (18)\l"];
-bb7 [shape=record, label="BB7 | 18: &lt;empty&gt;\l19: add (15) (10)\l20: bra (13)\l"];
-bb8 [shape=record, label="BB8 | 21: bra (2)\l"];
-bb9 [shape=record, label="BB9 | 22: write(13)\l"];
+bb2 [shape=record, label="BB2 | 15: phi (7) (0)\l16: phi (7) (1)\l17: phi (7) (1)\l18: phi (7) (0)\l"];
+bb3 [shape=record, label="BB3 | 3: cmp (1) (2)\l4: blt (3) (5)\l"];
+bb4 [shape=record, label="BB4 | 5: &lt;empty&gt;\l7: add (0) (6)\l"];
+bb5 [shape=record, label="BB5 | 11: phi (7) (7)\l12: phi (7) (7)\l13: phi (7) (0)\l"];
+bb6 [shape=record, label="BB6 | 8: cmp (0) (2)\l9: blt (8) (10)\l"];
+bb7 [shape=record, label="BB7 | 10: &lt;empty&gt;\l14: bra (11)\l"];
+bb8 [shape=record, label="BB8 | 19: bra (15)\l"];
+bb9 [shape=record, label="BB9 | 20: write(11)\l"];
 bb6 -> bb8 [label="branch"];
 bb3 -> bb9 [label="fall-through"];
 bb8 -> bb2 [label="branch"];

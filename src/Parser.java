@@ -200,14 +200,13 @@ public class Parser {
             SSA.changeCurrBbWhileContinue(); // now when generating graph code, we can go from while header -> while continue on one side, and while header -> while body on the other side.
 
             // solve problem of ordering: SEPARATE the basic blocks for the phi functions in the while loop header.
-
+            next();
         }
 
     }
 
     public static void ifStatement() throws Exception {
         next(); // consume "if"
-
         Result condition = relation();
         next(); // consume "then"
 
@@ -215,7 +214,6 @@ public class Parser {
         SSA.changeCurrBbThen();
         // bbp pos now +1, SSA changes in the following statSequence will apply to a new basic block
         statSequence();
-
         if (tkStr.equals("else")) {
             next(); // consume else
 
