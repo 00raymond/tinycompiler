@@ -6,6 +6,7 @@ import result.Result;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Stack;
 
 public class SSA {
 
@@ -272,12 +273,31 @@ public class SSA {
             start = skipWhileBody(bbp);
         }
 
-
-
         while (start > 0) {
 
             if (basicBlocks.get(start).isWhileContinue()) {
-                start = skipWhileBody(start);
+                System.out.println("currently at: " + start);
+                Stack<BasicBlock> stack = new Stack<>();
+                stack.push(basicBlocks.get(start));
+                while (!stack.isEmpty()) {
+                    System.out.println("currently at: " + start);
+
+                    start = skipWhileBody(start);
+                    start--;
+
+                    if (basicBlocks.get(start).isWhileContinue()) {
+                        System.out.println("currently at continue: " + start);
+
+                        stack.push(basicBlocks.get(start));
+                    }
+                    if (basicBlocks.get(start).isWhile()) {
+                        System.out.println("currently at header: " + start);
+
+                        stack.pop();
+                    }
+
+                }
+
                 continue;
             }
 
