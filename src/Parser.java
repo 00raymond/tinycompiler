@@ -12,6 +12,10 @@ public class Parser {
     private static ArrayList<Object> tempTerms = new ArrayList<>();
     private static int nestedLoop = 0;
 
+    public static String getTkStr() {
+        return tkStr;
+    }
+
     public static int getLoopDepth() {
         return nestedLoop;
     }
@@ -184,6 +188,7 @@ public class Parser {
         statSequence();
 
         if (tkStr.equals("od")) {
+            System.out.println("reached end of while loop");
 
             next(); // consume od
 
@@ -206,6 +211,7 @@ public class Parser {
     }
 
     public static void ifStatement() throws Exception {
+        System.out.println("reached if statement");
         next(); // consume "if"
         Result condition = relation();
         next(); // consume "then"
@@ -226,10 +232,15 @@ public class Parser {
         }
 
         if (tkStr.equals("fi")) {
+            System.out.println("reached end of if");
             next(); // consume fi
         }
 
+        System.out.println("got here");
         SSA.generatePhi();
+        System.out.println("got here after");
+        System.out.println(tkStr);
+        next();
     }
 
     private static String getBranchType(String relOp) {
@@ -361,7 +372,9 @@ public class Parser {
                 if (nestedLoop > 0) {
                     nearestWhileHeaderBbp = SSA.findNextWhileHeader(SSA.getBbp());
                     System.out.println("varName: " + varName + " src: " + src.getValue() + " nearestWhileHeaderBbp: " + nearestWhileHeaderBbp);
+                    System.out.println("reached here1");
                     SSA.updatePhiInTargetBlock(varName, src.getValue(), nearestWhileHeaderBbp);
+                    System.out.println("reached here2");
 
                 }
                 System.out.println("reached end");

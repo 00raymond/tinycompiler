@@ -6,6 +6,7 @@ import result.Result;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Stack;
 
 public class SSA {
@@ -23,6 +24,8 @@ public class SSA {
     }
 
     public static void updatePhiInTargetBlock(String varName, int instructionNo, int targetBbp) {
+        System.out.println("reached here3");
+
 
         if (basicBlocks.get(targetBbp).getVarTable().containsKey(varName)) {
             // update the phi function with the new value.
@@ -30,15 +33,18 @@ public class SSA {
             return;
         } else {
             // targetBbp must be set to the next while header block.
-            targetBbp = findNextWhileHeader(targetBbp - 1);
             System.out.println(targetBbp);
-            System.out.println("asdfasdfasdf");
+            targetBbp = findNextWhileHeader(targetBbp);
+            System.out.println("reached here4");
+            System.out.println(targetBbp);
             if (basicBlocks.get(targetBbp).getVarTable().containsKey(varName)) {
                 // update the phi function with the new value.
                 basicBlocks.get(targetBbp).changeInstructionBySymbol(varName, instructionNo);
                 return;
             } else {
                 // add it to the instructions of the targetBbp
+                System.out.println("reached here5");
+
                 int find = findVariableSkipElseThenBody(varName);
                 Instruction newPhiInstruct = new Instruction(sp, "phi", instructionNo, find);
                 basicBlocks.get(targetBbp).addSymbol(varName, sp);
@@ -623,20 +629,29 @@ public class SSA {
         int secondBbp = bbp;
         int addPhiBbp = bbp + 1;
 
+        System.out.println("reached this point");
         // set addphibbp to a join block
+        if (basicBlocks.size() <= addPhiBbp) {
+            BasicBlock bb = new BasicBlock();
+            basicBlocks.add(bb);
+        }
         basicBlocks.get(addPhiBbp).setJoin(true);
+        System.out.println("reached this point asdf");
 
         BasicBlock firstBlock = basicBlocks.get(firstBbp);
         HashMap<String, Integer> firstSymTable = firstBlock.getVarTable();
+        System.out.println("reached this point asdfasdf");
 
         BasicBlock secondBlock = basicBlocks.get(secondBbp);
         HashMap<String, Integer> secondSymTable = secondBlock.getVarTable();
+        System.out.println("reached this point asdfasdfasdf");
 
         HashMap<String, Integer> tempMap = new HashMap<>();
 
         for (String symbol : firstSymTable.keySet()) {
             tempMap.put(symbol, firstSymTable.get(symbol));
         }
+        System.out.println("reached this point asdf123124");
 
         for (String symbol : secondSymTable.keySet()) {
             if (tempMap.containsKey(symbol)) {
@@ -656,53 +671,63 @@ public class SSA {
                 tempMap.put(symbol, secondSymTable.get(symbol));
             }
         }
+        System.out.println("reached this point asdf1111111");
 
-        for (String symbol : tempMap.keySet()) {
-            // for each symbol remaining, go through each basic block and search for the target symbol
-            boolean found = false;
-            // create a phi function for each variable remaining in tempMap and search the last block(s) for the symbol/its instruction.
-            try {
-            for (int i = addPhiBbp - 2; i > 0; i--) {
-                BasicBlock tempBb = basicBlocks.get(i);
-                for (String sym : tempBb.getVarTable().keySet()) {
-                    if (sym.equals(symbol)) {
-                        found = true;
-                        //create a phi function instruction
-                        Instruction phiInstruct = new Instruction(sp, "phi", tempMap.get(symbol), tempBb.getVarTable().get(symbol));
-                        // add the phi function to the symbol table of the addPhiBbp, consisting of the instructions of the 2 keys
-                        basicBlocks.get(addPhiBbp).addInstruction(phiInstruct);
-                        // remove the symbol from the tempMap
-                        tempMap.remove(symbol);
+        System.out.println(tempMap);
+        try {
+            Iterator<String> iterator = tempMap.keySet().iterator();
+            while (iterator.hasNext()) {
+                String symbol = iterator.next();
+                System.out.println("currently on" + symbol);
+                boolean found = false;
 
-                        // add to symbol table the symbol and the instruction number of the phi function into the addPhiBbp symbol table
-                        basicBlocks.get(addPhiBbp).addSymbol(symbol, sp);
+                try {
+                    for (int i = addPhiBbp - 2; i > 0; i--) {
+                        BasicBlock tempBb = basicBlocks.get(i);
+                        for (String sym : tempBb.getVarTable().keySet()) {
+                            if (sym.equals(symbol)) {
+                                System.out.println("here asf");
+                                System.out.println(tempMap);
 
-                        sp++;
-                        break;
+                                if (tempMap.get(symbol) == null) {
+                                    System.out.println("its null bruh " + symbol + " " + tempBb.getVarTable().get(symbol));
+                                    continue;
+                                }
+                                found = true;
+                                Instruction phiInstruct = new Instruction(sp, "phi", tempMap.get(symbol), tempBb.getVarTable().get(symbol));
+                                basicBlocks.get(addPhiBbp).addInstruction(phiInstruct);
+                                iterator.remove(); // Remove the symbol from the tempMap
+
+                                basicBlocks.get(addPhiBbp).addSymbol(symbol, sp);
+                                sp++;
+                                break;
+                            }
+                        }
+                        if (found) break; // Exit the loop if the symbol was found and processed
                     }
-
+                } catch (Exception e) {
+                    System.out.println("Error: " + e);
                 }
 
+                System.out.println("reached this point asdf42444444444444444");
+
+                if (!found) {
+                    try {
+                        Instruction phiInstruct = new Instruction(sp, "phi", tempMap.get(symbol), -1);
+                        basicBlocks.get(addPhiBbp).addInstruction(phiInstruct);
+                        iterator.remove(); // Remove the symbol from the tempMap
+
+                        basicBlocks.get(addPhiBbp).addSymbol(symbol, sp);
+                        sp++;
+                    } catch (Exception e) {
+                        System.out.println("Error hahaha: " + e);
+                    }
+                }
             }
-            } catch (Exception e) {
-                System.out.println("Error: " + e);
-            }
-
-            if (!found) {
-                // create a phi function with the first block's instruction and null
-                Instruction phiInstruct = new Instruction(sp, "phi", tempMap.get(symbol), -1);
-                // add the phi function to the symbol table of the addPhiBbp, consisting of the instructions of the 2 keys
-                basicBlocks.get(addPhiBbp).addInstruction(phiInstruct);
-                // remove the symbol from the tempMap
-                tempMap.remove(symbol);
-
-                // add to symbol table the symbol and the instruction number of the phi function into the addPhiBbp symbol table
-                basicBlocks.get(addPhiBbp).addSymbol(symbol, sp);
-
-                sp++;
-            }
-
+        } catch (Exception e) {
+            System.out.println("Error hehehe: " + e);
         }
+
 
         bbp++;
     }

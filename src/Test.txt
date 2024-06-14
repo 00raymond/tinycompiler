@@ -1,18 +1,37 @@
 main
-var x, y, i, j; {
-    let i <- call InputNum();
-    let x <- 0;
-    let y <- 0;
-    let j <- i;
-    while x < 10 do
-        let x <- i + 1;
-        let y <- j + 1;
-        while j < 10 do
-            let x <- j + 1;
-            let y <- i + 1;
-            let j <- j + 1;
+
+var a, b, c, d; {
+
+    let a <- call InputNum();
+
+    let b <- call InputNum();
+
+    let c <- call InputNum();
+
+    let d <- b;
+
+
+
+    while a < 100 do
+
+        let a <- b + 1;
+
+        let d <- d + 1;
+
+        while d < 0 do
+
+            let b <- b + 1;
+
+            while c < 10 do
+
+                let c <- c + 1;
+
+            od;
+
+            let d <- b + 3;
+
         od;
-        let i <- i + 1
+
     od;
-    call OutputNum(x);
+
 }.

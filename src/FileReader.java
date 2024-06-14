@@ -41,7 +41,7 @@ public class FileReader {
     }
 
     public static void Error(Exception e) {
-        System.out.println("Error found here: " + e.getMessage());
+        System.out.println("Error found here: " + e.getMessage() + " at position " + Parser.getTkStr());
     }
 
 }
