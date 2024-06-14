@@ -24,8 +24,6 @@ public class SSA {
     }
 
     public static void updatePhiInTargetBlock(String varName, int instructionNo, int targetBbp) {
-        System.out.println("reached here3");
-
 
         if (basicBlocks.get(targetBbp).getVarTable().containsKey(varName)) {
             // update the phi function with the new value.
@@ -33,9 +31,7 @@ public class SSA {
             return;
         } else {
             // targetBbp must be set to the next while header block.
-            System.out.println(targetBbp);
-            targetBbp = findNextWhileHeader(targetBbp);
-            System.out.println("reached here4");
+            targetBbp = findNextWhileHeader(targetBbp - 1);
             System.out.println(targetBbp);
             if (basicBlocks.get(targetBbp).getVarTable().containsKey(varName)) {
                 // update the phi function with the new value.
@@ -43,8 +39,6 @@ public class SSA {
                 return;
             } else {
                 // add it to the instructions of the targetBbp
-                System.out.println("reached here5");
-
                 int find = findVariableSkipElseThenBody(varName);
                 Instruction newPhiInstruct = new Instruction(sp, "phi", instructionNo, find);
                 basicBlocks.get(targetBbp).addSymbol(varName, sp);
@@ -292,12 +286,10 @@ public class SSA {
                     start--;
 
                     if (basicBlocks.get(start).isWhileContinue()) {
-                        System.out.println("currently at continue: " + start);
 
                         stack.push(basicBlocks.get(start));
                     }
                     if (basicBlocks.get(start).isWhile()) {
-                        System.out.println("currently at header: " + start);
 
                         stack.pop();
                     }
@@ -779,61 +771,75 @@ public class SSA {
 
         // iterate backwards through the basic blocks and add edges
         // if the basic block is a JOIN BLOCK => add edges from bb -1  to bb and bb -2 to bb.
+        //create a stack of while continues. every time a while header is found, associate it with the top of the while continue stack, and then pop it.
+
+        Stack<BasicBlock> whileContinueStack = new Stack<>();
+
         for (int i = basicBlocks.size() - 1; i >= 0; i--) {
+            System.out.println("currently on bb: " + i);
             BasicBlock basicBlock = basicBlocks.get(i);
-            if (basicBlock.getInstructions().isEmpty()) { continue; }
-            if (basicBlock.isWhileContinue()) {
-                // x amount of blocks before will link to the while header blocks.
-                // find the while header blocks using skipWhileBody.
-                if (basicBlocks.get(i-1).isWhileContinue()) {
-                    // if previous block is also a while continue, this is a nested while loop.
+            if (basicBlock.getInstructions().isEmpty() && i == basicBlocks.size() - 1) { continue; }
 
-                    int nestedWhileHeader = findNextWhileHeader(i-1);
-                    int wrappingWhileHeader = findNextWhileHeader(nestedWhileHeader - 1);
+            try {
+                if (basicBlock.isWhile()) {
+                    // top of the whilecontinue stack is the while continue block associated with this while header.
+                    BasicBlock whileContinue = whileContinueStack.pop();
+                    int whileContinueBbp = basicBlocks.indexOf(whileContinue);
 
-                    // make i-1 continue block point to first appearing while header block
-                    dotGraph.append("bb").append(nestedWhileHeader + 1).append(" -> bb").append(i-1).append(" [label=\"branch\"];\n");
+                    // basicBlock + 1 should point to whileContinueBbp.
+                    dotGraph.append("bb").append(i + 1).append(" -> bb").append(whileContinueBbp).append(" [label=\"follow\"];\n");
 
-                    // make i continue block be pointed to by the wrapping while header block.
-                    dotGraph.append("bb").append(wrappingWhileHeader + 1).append(" -> bb").append(i).append(" [label=\"fall-through\"];\n");
-                    dotGraph.append("bb").append(i-1).append(" -> bb").append(wrappingWhileHeader).append(" [label=\"branch\"];\n");
+                    // if the stack is now empty, whileContinue doesnt need to point to anything. however, if it is not empty, it needs to point
+                    // to the wrapping while header.
+                    // the whilecontinue -1 also needs to point to the current while header.
+                    dotGraph.append("bb").append(whileContinueBbp - 1).append(" -> bb").append(i).append(" [label=\"branch\"];\n");
 
-                    // how many i's should be incremented now?
 
-                } else {
 
-                    int whileHeaderBbp = i;
-                    whileHeaderBbp = skipWhileBody(whileHeaderBbp);
-                    int whileHeaderRelBbp = whileHeaderBbp + 1;
-                    dotGraph.append("bb").append(whileHeaderBbp).append(" -> bb").append(whileHeaderRelBbp).append(";\n");
-                    dotGraph.append("bb").append(whileHeaderRelBbp).append(" -> bb").append(i).append(" [label=\"fall-through\"];\n");
-
-                    // now between the while rel block and the while continue block, we need to add the body blocks.
-                    // itll just go whileheaderrelbbp -> bodyblock1 -> bodyblock2.. etc...
-                    dotGraph.append("bb").append(whileHeaderRelBbp).append(" -> bb").append(whileHeaderRelBbp + 1).append(" [label=\"branch\"];\n");
-                    for (int j = whileHeaderRelBbp + 2; j < i; j++) {
-                        dotGraph.append("bb").append(j - 1).append(" -> bb").append(j).append(";\n");
-                    }
-                    // last body block will point to the while header block
-                    dotGraph.append("bb").append(i - 1).append(" -> bb").append(whileHeaderBbp).append(" [label=\"branch\"];\n");
-                    i = whileHeaderBbp + 1;
                 }
+            } catch (Exception e) {
+                System.out.println("Error hahah: " + e);
+            }
+
+            if (basicBlock.isWhileContinue()) {
+                whileContinueStack.push(basicBlock);
+
+
+//                if (basicBlocks.get(i-1).isWhileContinue()) {
+//
+//                    int nestedWhileHeader = findNextWhileHeader(i-1);
+//                    int wrappingWhileHeader = findNextWhileHeader(nestedWhileHeader - 1);
+//
+//                    dotGraph.append("bb").append(nestedWhileHeader + 1).append(" -> bb").append(i-1).append(" [label=\"branch\"];\n");
+//
+//                    dotGraph.append("bb").append(wrappingWhileHeader + 1).append(" -> bb").append(i).append(" [label=\"fall-through\"];\n");
+//                    dotGraph.append("bb").append(i-1).append(" -> bb").append(wrappingWhileHeader).append(" [label=\"branch\"];\n");
+//
+//                } else {
+//
+//                    int whileHeaderBbp = i;
+//                    whileHeaderBbp = skipWhileBody(whileHeaderBbp);
+//                    int whileHeaderRelBbp = whileHeaderBbp + 1;
+//                    dotGraph.append("bb").append(whileHeaderBbp).append(" -> bb").append(whileHeaderRelBbp).append(";\n");
+//                    dotGraph.append("bb").append(whileHeaderRelBbp).append(" -> bb").append(i).append(" [label=\"fall-through\"];\n");
+//
+//                    dotGraph.append("bb").append(whileHeaderRelBbp).append(" -> bb").append(whileHeaderRelBbp + 1).append(" [label=\"branch\"];\n");
+//                    for (int j = whileHeaderRelBbp + 2; j < i; j++) {
+//                        dotGraph.append("bb").append(j - 1).append(" -> bb").append(j).append(";\n");
+//                    }
+//                    dotGraph.append("bb").append(i - 1).append(" -> bb").append(whileHeaderBbp).append(" [label=\"branch\"];\n");
+//                    i = whileHeaderBbp + 1;
+//                }
             } else if (basicBlock.isJoin()) {
                 dotGraph.append("bb").append(i - 1).append(" -> bb").append(i).append(" [label=\"branch\"];\n");
                 dotGraph.append("bb").append(i - 2).append(" -> bb").append(i).append(" [label=\"fall-through\"];\n");
-
-                // check if the both blocks are THEN and ELSE blocks, and if so they both need to link to their predecessor.
-                // if only one of them is an if, it WILL be at the position bb -1. This will link to the predecessor and the
-                // join block will link directly back to the same predecessor in the absence of an else block.
 
                 if (basicBlocks.get(i-1).isElse()) {
                     // then i - 1 is else and i - 2 is then.
                     dotGraph.append("bb").append(i - 3).append(" -> bb").append(i - 1).append(" [label=\"fall-through\"];\n");
                     dotGraph.append("bb").append(i - 3).append(" -> bb").append(i - 2).append(" [label=\"branch\"];\n");
                 } else {
-                    // otherwise, i - 1 is then and i -2 is the previous block.
-                    // only a then block, thus the then block now needs to link to the predecessor.
-                    // i needs to link to i -2 and i -1 also needs to link to i - 2.
+
                     dotGraph.append("bb").append(i - 2).append(" -> bb").append(i - 1).append(";\n");
                     dotGraph.append("bb").append(i - 2).append(" -> bb").append(i).append(";\n");
                 }

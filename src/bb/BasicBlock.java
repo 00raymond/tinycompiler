@@ -84,8 +84,6 @@ public class BasicBlock {
 
     public void changeInstructionBySymbol(String varName, int newXInstructionNo) {
 
-        System.out.println("reahced here");
-
         if (!varTable.containsKey(varName)) {
 
             return;

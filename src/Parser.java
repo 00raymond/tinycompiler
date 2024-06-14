@@ -166,9 +166,28 @@ public class Parser {
                 SSA.generatePhiFromLookAhead(varName, whileHeaderPosition);
 
             }
-            System.out.println(Tokenizer.lookAhead(i));
+            System.out.println("here af!!!" + Tokenizer.lookAhead(i));
             i++;
+            System.out.println("here after incrementing" + Tokenizer.lookAhead(i) + " end");
             currentLookAhead = Tokenizer.lookAhead(i);
+
+            if (currentLookAhead.contains("od") && currentLookAhead.contains("let")) {
+                // this will be the last lookahead statement in the while loop body.
+                String[] split = currentLookAhead.trim().split("\\s+");
+                String varName = split[1];
+
+                if (addedTemp.contains(varName)) {
+                    i++;
+                    currentLookAhead = Tokenizer.lookAhead(i);
+                    continue;
+                }
+                addedTemp.add(varName);
+                System.out.println(varName);
+
+                SSA.generatePhiFromLookAhead(varName, whileHeaderPosition);
+
+            }
+
         }
         i = 0;
 
@@ -188,7 +207,6 @@ public class Parser {
         statSequence();
 
         if (tkStr.equals("od")) {
-            System.out.println("reached end of while loop");
 
             next(); // consume od
 
@@ -211,7 +229,6 @@ public class Parser {
     }
 
     public static void ifStatement() throws Exception {
-        System.out.println("reached if statement");
         next(); // consume "if"
         Result condition = relation();
         next(); // consume "then"
@@ -232,13 +249,10 @@ public class Parser {
         }
 
         if (tkStr.equals("fi")) {
-            System.out.println("reached end of if");
             next(); // consume fi
         }
 
-        System.out.println("got here");
         SSA.generatePhi();
-        System.out.println("got here after");
         System.out.println(tkStr);
         next();
     }
@@ -372,12 +386,9 @@ public class Parser {
                 if (nestedLoop > 0) {
                     nearestWhileHeaderBbp = SSA.findNextWhileHeader(SSA.getBbp());
                     System.out.println("varName: " + varName + " src: " + src.getValue() + " nearestWhileHeaderBbp: " + nearestWhileHeaderBbp);
-                    System.out.println("reached here1");
                     SSA.updatePhiInTargetBlock(varName, src.getValue(), nearestWhileHeaderBbp);
-                    System.out.println("reached here2");
 
                 }
-                System.out.println("reached end");
             }
         }
 
