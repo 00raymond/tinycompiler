@@ -235,8 +235,10 @@ public class Parser {
 
         SSA.createBasicBlock();
         SSA.changeCurrBbThen();
+
         // bbp pos now +1, SSA changes in the following statSequence will apply to a new basic block
         statSequence();
+
         if (tkStr.equals("else")) {
             next(); // consume else
 
@@ -385,8 +387,10 @@ public class Parser {
 
                 if (nestedLoop > 0) {
                     nearestWhileHeaderBbp = SSA.findNextWhileHeader(SSA.getBbp());
+
                     System.out.println("varName: " + varName + " src: " + src.getValue() + " nearestWhileHeaderBbp: " + nearestWhileHeaderBbp);
                     SSA.updatePhiInTargetBlock(varName, src.getValue(), nearestWhileHeaderBbp);
+
 
                 }
             }

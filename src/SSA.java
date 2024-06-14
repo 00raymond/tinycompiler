@@ -31,7 +31,11 @@ public class SSA {
             return;
         } else {
             // targetBbp must be set to the next while header block.
+            int save = targetBbp;
             targetBbp = findNextWhileHeader(targetBbp - 1);
+            if (targetBbp == -1) {
+                targetBbp = findNextWhileHeader(save);
+            }
             System.out.println(targetBbp);
             if (basicBlocks.get(targetBbp).getVarTable().containsKey(varName)) {
                 // update the phi function with the new value.
@@ -776,7 +780,6 @@ public class SSA {
         Stack<BasicBlock> whileContinueStack = new Stack<>();
 
         for (int i = basicBlocks.size() - 1; i >= 0; i--) {
-            System.out.println("currently on bb: " + i);
             BasicBlock basicBlock = basicBlocks.get(i);
             if (basicBlock.getInstructions().isEmpty() && i == basicBlocks.size() - 1) { continue; }
 
